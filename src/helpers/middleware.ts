@@ -1,30 +1,12 @@
-import jwt from "jsonwebtoken";
-import { Request, Response, NextFunction } from "express";
+import rateLimit from 'express-rate-limit';
 
-interface JwtPayload {
-  userId: string;
-}
-
-const authMiddleware = (
-  req: Request & { user?: JwtPayload },
-  res: Response,
-  next: NextFunction
-) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) res.status(401).send({ message: "No token provided" });
-
-  if (authHeader) {
-    const token = authHeader.split(" ")[1];
-    if (!token) res.status(401).send({ message: "No token provided" });
-
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-      req.user = decoded;
-      next();
-    } catch (err) {
-      res.status(401).send({ message: "Invalid token" });
-    }
-  }
-};
-
-export default authMiddleware;
+export const urlRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per window
+  message: {
+    status: 429,
+    error: 'Too many requests — please try again later.',
+  },
+  standardHeaders: true, // Add RateLimit headers to response
+  legacyHeaders: false,  // Disable the `X-RateLimit-*` headers
+});
